@@ -1201,8 +1201,8 @@ class LoadoutApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title("Loadout tool")
-        self.root.minsize(480, 420)
-        self.root.geometry("560x720")
+        self.root.minsize(560, 520)
+        self.root.geometry("680x840")
         self._center_main_window()
         self.root.attributes("-alpha", 1.0)
         self._is_visible = True
@@ -1221,16 +1221,19 @@ class LoadoutApp:
 
         alpha_fr = ttk.Frame(self.root, padding=(10, 6, 10, 10))
         alpha_fr.pack(side=tk.BOTTOM, fill=tk.X)
-        ttk.Label(alpha_fr, text="Transparency").pack(side=tk.LEFT)
+
+        trans_row = ttk.Frame(alpha_fr)
+        trans_row.pack(fill=tk.X)
+        ttk.Label(trans_row, text="Transparency").pack(side=tk.LEFT)
         alpha_slider = ttk.Scale(
-            alpha_fr,
+            trans_row,
             from_=35,
             to=100,
             variable=self._alpha_var,
             command=self._on_alpha_changed,
         )
         alpha_slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 10))
-        self._alpha_value_lbl = ttk.Label(alpha_fr, text="100%")
+        self._alpha_value_lbl = ttk.Label(trans_row, text="100%")
         self._alpha_value_lbl.pack(side=tk.RIGHT)
 
         self._setup_hotkeys()
