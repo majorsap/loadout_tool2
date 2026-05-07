@@ -12,12 +12,13 @@ import sys
 import threading
 import ctypes
 import time
+import webbrowser
 from html import unescape
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, simpledialog, ttk
 from pathlib import Path
 
 try:
@@ -32,6 +33,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("USERPROFILE", ".")) / ".loadout_tool"
 HELLDIVERS_DATA_PATH = SCRIPT_DIR / "helldivers_loadout_data.json"
 SAVED_HELLDIVERS_LOADOUTS = DATA_DIR / "helldivers_saved_loadouts.json"
+SAVED_WEB_LINKS = DATA_DIR / "web_links.json"
 ICON_DIR = DATA_DIR / "icons"
 ICON_SIZE = 40  # pixels for icon thumbnails
 VK_NUMPAD1 = 0x61
@@ -527,6 +529,43 @@ def save_saved_helldivers_loadouts(loadouts: dict[str, dict]) -> None:
         json.dump(payload, f, indent=2)
 
 
+def load_web_links() -> list[dict[str, str]]:
+    defaults = [
+        {"name": "Link 1", "url": ""},
+        {"name": "Link 2", "url": ""},
+        {"name": "Link 3", "url": ""},
+    ]
+    if not SAVED_WEB_LINKS.is_file():
+        return defaults
+
+    try:
+        data = json.loads(SAVED_WEB_LINKS.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return defaults
+
+    raw_links = data.get("links") if isinstance(data, dict) else None
+    if not isinstance(raw_links, list):
+        return defaults
+
+    out: list[dict[str, str]] = []
+    for i in range(3):
+        item = raw_links[i] if i < len(raw_links) else None
+        if isinstance(item, dict):
+            name = str(item.get("name") or f"Link {i + 1}").strip() or f"Link {i + 1}"
+            url = str(item.get("url") or "").strip()
+            out.append({"name": name, "url": url})
+        else:
+            out.append({"name": f"Link {i + 1}", "url": ""})
+    return out
+
+
+def save_web_links(links: list[dict[str, str]]) -> None:
+    ensure_data_dir()
+    payload = {"version": 1, "links": links[:3]}
+    with open(SAVED_WEB_LINKS, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
 class IconCache:
     """Downloads item icons from the wiki and caches them to disk.
 
@@ -683,6 +722,8 @@ class HelldiversPanel(ttk.Frame):
     def __init__(self, master: tk.Misc) -> None:
         super().__init__(master, padding=10)
         self._game = load_helldivers_game_data()
+        self._web_links = load_web_links()
+        self._link_buttons: list[ttk.Button] = []
         self._fields: dict[str, ttk.Combobox] = {}
         self._icon_labels: dict[str, tk.Label] = {}
         self._name_entry: ttk.Entry | None = None
@@ -776,6 +817,12 @@ class HelldiversPanel(ttk.Frame):
         button_fr = ttk.Frame(self)
         button_fr.pack(fill=tk.X, pady=(12, 0))
         ttk.Button(button_fr, text="Update from Wiki", command=self._on_update_wiki).pack(side=tk.LEFT, padx=(0, 8))
+        for i in range(3):
+            btn = ttk.Button(button_fr, text=self._web_links[i]["name"], command=lambda idx=i: self._on_open_link(idx))
+            btn.pack(side=tk.LEFT, padx=(0, 8))
+            btn.bind("<Button-3>", lambda _event, idx=i: self._on_edit_single_link(idx))
+            self._link_buttons.append(btn)
+        ttk.Button(button_fr, text="Edit Links", command=self._on_edit_links).pack(side=tk.LEFT)
 
         path_lbl = ttk.Label(
             self,
@@ -1020,6 +1067,135 @@ class HelldiversPanel(ttk.Frame):
         else:
             messagebox.showerror("Wiki Update Failed", message)
 
+    def _normalize_link_url(self, url: str) -> str:
+        url = (url or "").strip()
+        if not url:
+            return ""
+        if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", url):
+            url = f"https://{url}"
+        return url
+
+    def _refresh_link_buttons(self) -> None:
+        for i, btn in enumerate(self._link_buttons):
+            if i < len(self._web_links):
+                btn.configure(text=self._web_links[i].get("name") or f"Link {i + 1}")
+
+    def _save_links(self) -> None:
+        try:
+            save_web_links(self._web_links)
+        except OSError as e:
+            messagebox.showerror("Save failed", f"Could not save web links:\n{e}")
+
+    def _on_open_link(self, index: int) -> None:
+        if index < 0 or index >= len(self._web_links):
+            return
+        item = self._web_links[index]
+        url = self._normalize_link_url(item.get("url") or "")
+        if not url:
+            self._on_edit_single_link(index)
+            return
+        if not webbrowser.open_new_tab(url):
+            messagebox.showerror("Open link failed", f"Could not open:\n{url}")
+
+    def _on_edit_single_link(self, index: int) -> str:
+        if index < 0 or index >= len(self._web_links):
+            return "break"
+        current = self._web_links[index]
+        name = simpledialog.askstring(
+            "Edit Link",
+            f"Link name for Link {index + 1}:",
+            initialvalue=current.get("name") or f"Link {index + 1}",
+            parent=self,
+        )
+        if name is None:
+            return "break"
+        url = simpledialog.askstring(
+            "Edit Link",
+            f"Web URL for {name.strip() or f'Link {index + 1}'}:\n(Leave blank to clear)",
+            initialvalue=current.get("url") or "",
+            parent=self,
+        )
+        if url is None:
+            return "break"
+        self._web_links[index] = {
+            "name": name.strip() or f"Link {index + 1}",
+            "url": self._normalize_link_url(url),
+        }
+        self._refresh_link_buttons()
+        self._save_links()
+        return "break"
+
+    def _on_edit_links(self) -> None:
+        main = self.winfo_toplevel()
+        editor = tk.Toplevel(main)
+        editor.withdraw()
+        editor.title("Edit Web Links")
+        editor.transient(main)
+        editor.resizable(False, False)
+        # Keep this dialog above the app window (including overlay/topmost mode).
+        desired_topmost = bool(main.attributes("-topmost"))
+        editor.attributes("-topmost", desired_topmost)
+        editor.grab_set()
+
+        frame = ttk.Frame(editor, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        entries: list[tuple[tk.StringVar, tk.StringVar]] = []
+        for i in range(3):
+            item = self._web_links[i] if i < len(self._web_links) else {"name": f"Link {i + 1}", "url": ""}
+            name_var = tk.StringVar(value=item.get("name") or f"Link {i + 1}")
+            url_var = tk.StringVar(value=item.get("url") or "")
+            entries.append((name_var, url_var))
+
+            row = i * 2
+            ttk.Label(frame, text=f"Link {i + 1} Name").grid(row=row, column=0, sticky="w", padx=(0, 8), pady=(0, 2))
+            ttk.Entry(frame, width=28, textvariable=name_var).grid(row=row, column=1, sticky="ew", pady=(0, 2))
+            ttk.Label(frame, text=f"Link {i + 1} URL").grid(row=row + 1, column=0, sticky="w", padx=(0, 8), pady=(0, 8))
+            ttk.Entry(frame, width=28, textvariable=url_var).grid(row=row + 1, column=1, sticky="ew", pady=(0, 8))
+
+        frame.columnconfigure(1, weight=1)
+
+        button_row = ttk.Frame(frame)
+        button_row.grid(row=6, column=0, columnspan=2, sticky="e", pady=(2, 0))
+
+        def _save_and_close() -> None:
+            updated: list[dict[str, str]] = []
+            for i, (name_var, url_var) in enumerate(entries):
+                updated.append(
+                    {
+                        "name": name_var.get().strip() or f"Link {i + 1}",
+                        "url": self._normalize_link_url(url_var.get()),
+                    }
+                )
+            self._web_links = updated
+            self._refresh_link_buttons()
+            self._save_links()
+            editor.destroy()
+
+        ttk.Button(button_row, text="Cancel", command=editor.destroy).pack(side=tk.RIGHT)
+        ttk.Button(button_row, text="Save", command=_save_and_close).pack(side=tk.RIGHT, padx=(0, 8))
+        editor.protocol("WM_DELETE_WINDOW", editor.destroy)
+        main.update_idletasks()
+        editor.update_idletasks()
+
+        def _place_editor() -> None:
+            w = max(editor.winfo_reqwidth(), editor.winfo_width())
+            h = max(editor.winfo_reqheight(), editor.winfo_height())
+            x = main.winfo_rootx() + max(0, (main.winfo_width() - w) // 2)
+            y = main.winfo_rooty() + max(0, (main.winfo_height() - h) // 2)
+            editor.geometry(f"{w}x{h}+{x}+{y}")
+
+        _place_editor()
+        editor.deiconify()
+        editor.lift(main)
+        # Re-apply placement after map to override Windows initial-placement behavior.
+        editor.after(1, _place_editor)
+        # Brief topmost pulse ensures the dialog is raised in front of the app.
+        editor.attributes("-topmost", True)
+        editor.after(1, lambda: editor.attributes("-topmost", desired_topmost))
+        editor.focus_force()
+        editor.wait_window(editor)
+
 
 class LoadoutApp:
     def __init__(self) -> None:
@@ -1027,6 +1203,7 @@ class LoadoutApp:
         self.root.title("Loadout tool")
         self.root.minsize(480, 420)
         self.root.geometry("560x720")
+        self._center_main_window()
         self.root.attributes("-alpha", 1.0)
         self._is_visible = True
         self._overlay_enabled = False
@@ -1057,6 +1234,16 @@ class LoadoutApp:
         self._alpha_value_lbl.pack(side=tk.RIGHT)
 
         self._setup_hotkeys()
+
+    def _center_main_window(self) -> None:
+        self.root.update_idletasks()
+        w = self.root.winfo_width()
+        h = self.root.winfo_height()
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+        x = max(0, (screen_w - w) // 2)
+        y = max(0, (screen_h - h) // 2)
+        self.root.geometry(f"{w}x{h}+{x}+{y}")
 
     def _setup_hotkeys(self) -> None:
         if pynput_keyboard is not None:
