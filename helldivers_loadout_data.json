@@ -387,27 +387,6 @@
       "EXO-55 Breakthrough Exosuit",
       "EXO-51 Lumberer Exosuit"
     ],
-    "mission_ship": [
-      "Reinforce",
-      "Resupply",
-      "SoS Beacon",
-      "Eagle Rearm",
-      "Call In Super Destroyer"
-    ],
-    "mission_objective": [
-      "NUX-223 Hellbomb",
-      "Upload Data",
-      "SSSD Delivery",
-      "Super Earth Flag",
-      "Seismic Probe",
-      "Prospecting Drill",
-      "Dark Fluid Vessel",
-      "Tectonic Drill",
-      "Hive Breaker Drill",
-      "Cargo Container",
-      "Reinforcement Pods",
-      "SEAF Artillery"
-    ],
     "mission_other": [
       "Orbital Illumination Flare"
     ]
