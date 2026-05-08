@@ -260,12 +260,7 @@
     "M-102 Fast Recon Vehicle",
     "TD-220 Bastion MK XVI",
     "EXO-55 Breakthrough Exosuit",
-    "EXO-51 Lumberer Exosuit",
-    "Orbital Illumination Flare",
-    "A Stratagem Permit",
-    "Government of Super Earth",
-    "Ship Master",
-    "Template:Nav Stratagem"
+    "EXO-51 Lumberer Exosuit"
   ],
   "stratagem_groups": {
     "support_weapons": [
@@ -370,9 +365,7 @@
       "EXO-55 Breakthrough Exosuit",
       "EXO-51 Lumberer Exosuit"
     ],
-    "mission_other": [
-      "Orbital Illumination Flare"
-    ]
+    "mission_other": []
   },
   "armor": {
     "weight_class_counts": {
