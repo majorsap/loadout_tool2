@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 import threading
 import ctypes
 import time
@@ -22,6 +23,11 @@ from tkinter import messagebox, simpledialog, ttk
 from pathlib import Path
 
 try:
+    import requests
+except ImportError:
+    requests = None
+
+try:
     from pynput import keyboard as pynput_keyboard
 except Exception:
     pynput_keyboard = None
@@ -32,6 +38,7 @@ if sys.platform == "win32":
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("USERPROFILE", ".")) / ".loadout_tool"
 HELLDIVERS_DATA_PATH = SCRIPT_DIR / "helldivers_loadout_data.json"
+WEAPON_STATS_PATH = SCRIPT_DIR / "weapon_stats.json"
 SAVED_HELLDIVERS_LOADOUTS = DATA_DIR / "helldivers_saved_loadouts.json"
 SAVED_WEB_LINKS = DATA_DIR / "web_links.json"
 ICON_DIR = DATA_DIR / "icons"
@@ -515,8 +522,25 @@ def update_helldivers_wiki_data() -> tuple[bool, str]:
         with open(HELLDIVERS_DATA_PATH, "w", encoding="utf-8") as f:
             json.dump(current_data, f, indent=2)
         
+        # Launch weapon stats scraper in background (non-blocking subprocess)
+        weapon_script = SCRIPT_DIR / "fetch_weapon_stats_v2.py"
+        if weapon_script.is_file():
+            try:
+                # Log file for weapon scraper output (silent in background)
+                log_file = DATA_DIR / "weapon_scraper.log"
+                with open(log_file, "w", encoding="utf-8") as log:
+                    subprocess.Popen(
+                        [sys.executable, str(weapon_script)],
+                        cwd=str(SCRIPT_DIR),
+                        stdout=log,
+                        stderr=log,
+                        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                    )
+            except Exception:
+                pass  # Silently fail if subprocess cannot start
+        
         armor_count = len(armors_light) + len(armors_medium) + len(armors_heavy)
-        return True, f"Updated wiki data:\n{len(strats_flat)} stratagems\n{armor_count} armor pieces"
+        return True, f"Updated wiki data:\n{len(strats_flat)} stratagems\n{armor_count} armor pieces\n(weapon stats updating in background…)"
     
     except Exception as e:
         return False, f"Error updating wiki data: {e}"

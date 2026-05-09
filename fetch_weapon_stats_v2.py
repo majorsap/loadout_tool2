@@ -178,13 +178,13 @@ def main() -> None:
             html = _fetch_page_html(wiki_page)
             stats = _parse_weapon_page(html)
         except Exception as exc:
-            print(f"  → ERROR: {exc}")
+            print(f"  => ERROR: {exc}")
             stats = {}
 
         if stats:
-            print(f"  → {list(stats.keys())}")
+            print(f"  => {list(stats.keys())}")
         else:
-            print("  → (no stats found)")
+            print("  => (no stats found)")
         result[cat][name] = stats
         time.sleep(0.4)
 
