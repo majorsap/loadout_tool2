@@ -42,6 +42,7 @@ WEAPON_STATS_PATH = SCRIPT_DIR / "weapon_stats.json"
 ARMOR_STATS_PATH = SCRIPT_DIR / "armor_stats.json"
 SAVED_HELLDIVERS_LOADOUTS = DATA_DIR / "helldivers_saved_loadouts.json"
 SAVED_WEB_LINKS = DATA_DIR / "web_links.json"
+APP_SETTINGS_PATH = DATA_DIR / "app_settings.json"
 ICON_DIR = DATA_DIR / "icons"
 ICON_SIZE = 40  # pixels for icon thumbnails
 VK_NUMPAD1 = 0x61
@@ -54,6 +55,23 @@ HWND_NOTOPMOST = -2
 SWP_NOSIZE = 0x0001
 SWP_NOMOVE = 0x0002
 SWP_SHOWWINDOW = 0x0040
+
+HOTKEY_OPTIONS = [
+    {"id": "kp1", "label": "Numpad 1", "vk": 0x61, "tk": "<KP_1>"},
+    {"id": "kp2", "label": "Numpad 2", "vk": 0x62, "tk": "<KP_2>"},
+    {"id": "end", "label": "End", "vk": 0x23, "tk": "<End>"},
+    {"id": "down", "label": "Down Arrow", "vk": 0x28, "tk": "<Down>"},
+    {"id": "f8", "label": "F8", "vk": 0x77, "tk": "<F8>"},
+    {"id": "f9", "label": "F9", "vk": 0x78, "tk": "<F9>"},
+    {"id": "f10", "label": "F10", "vk": 0x79, "tk": "<F10>"},
+    {"id": "f11", "label": "F11", "vk": 0x7A, "tk": "<F11>"},
+    {"id": "f12", "label": "F12", "vk": 0x7B, "tk": "<F12>"},
+]
+
+DEFAULT_HOTKEYS = {
+    "toggle_visibility": "kp1",
+    "toggle_overlay": "kp2",
+}
 
 
 def _get_window_process_name(hwnd: int) -> str:
@@ -613,6 +631,22 @@ def save_web_links(links: list[dict[str, str]]) -> None:
         json.dump(payload, f, indent=2)
 
 
+def load_app_settings() -> dict:
+    if not APP_SETTINGS_PATH.is_file():
+        return {}
+    try:
+        data = json.loads(APP_SETTINGS_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_app_settings(settings: dict) -> None:
+    ensure_data_dir()
+    with open(APP_SETTINGS_PATH, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2)
+
+
 class IconCache:
     """Downloads item icons from the wiki and caches them to disk.
 
@@ -862,7 +896,9 @@ class HelldiversPanel(ttk.Frame):
             font=("Segoe UI", 9),
             foreground="#666",
             justify=tk.LEFT,
+            anchor="nw",
             wraplength=400,
+            height=2,
         )
         armor_passive_lbl.grid(row=row, column=1, sticky="w", pady=3)
         self._armor_passive_label = armor_passive_lbl
@@ -881,7 +917,9 @@ class HelldiversPanel(ttk.Frame):
             font=("Segoe UI", 9),
             foreground="#666",
             justify=tk.LEFT,
+            anchor="nw",
             wraplength=300,
+            height=7,
         )
         primary_text.grid(row=0, column=0, sticky="nw", padx=(0, 8))
         self._stats_labels["primary"] = primary_text
@@ -893,7 +931,9 @@ class HelldiversPanel(ttk.Frame):
             font=("Segoe UI", 9),
             foreground="#666",
             justify=tk.LEFT,
+            anchor="nw",
             wraplength=300,
+            height=7,
         )
         secondary_text.grid(row=0, column=1, sticky="nw")
         self._stats_labels["secondary"] = secondary_text
@@ -915,24 +955,6 @@ class HelldiversPanel(ttk.Frame):
         self._saved_cb.pack(side=tk.LEFT, padx=8)
         ttk.Button(line2, text="Load", command=self._on_load_selected).pack(side=tk.LEFT)
         ttk.Button(line2, text="Delete", command=self._on_delete_selected).pack(side=tk.LEFT, padx=(8, 0))
-
-        button_fr = ttk.Frame(self)
-        button_fr.pack(fill=tk.X, pady=(12, 0))
-        ttk.Button(button_fr, text="Update from Wiki", command=self._on_update_wiki).pack(side=tk.LEFT, padx=(0, 8))
-        for i in range(3):
-            btn = ttk.Button(button_fr, text=self._web_links[i]["name"], command=lambda idx=i: self._on_open_link(idx))
-            btn.pack(side=tk.LEFT, padx=(0, 8))
-            btn.bind("<Button-3>", lambda _event, idx=i: self._on_edit_single_link(idx))
-            self._link_buttons.append(btn)
-        ttk.Button(button_fr, text="Edit Links", command=self._on_edit_links).pack(side=tk.LEFT)
-
-        path_lbl = ttk.Label(
-            self,
-            text=f"Presets file: {SAVED_HELLDIVERS_LOADOUTS}",
-            font=("Segoe UI", 8),
-            foreground="#666",
-        )
-        path_lbl.pack(anchor="w", pady=(8, 0))
 
         self._refresh_saved_names()
 
@@ -1118,6 +1140,23 @@ class HelldiversPanel(ttk.Frame):
             pass
         return {}
 
+    @staticmethod
+    def _clip_lines(lines: list[str], max_lines: int) -> str:
+        """Limit display text to a fixed number of lines to keep layout stable."""
+        if len(lines) <= max_lines:
+            return "\n".join(lines)
+        clipped = lines[: max_lines - 1]
+        clipped.append("...")
+        return "\n".join(clipped)
+
+    @staticmethod
+    def _clip_chars(text: str, max_chars: int) -> str:
+        """Limit a single-line label to avoid layout growth from long content."""
+        text = str(text or "").strip()
+        if len(text) <= max_chars:
+            return text
+        return text[: max_chars - 3].rstrip() + "..."
+
     def _load_armor_stats(self) -> dict:
         """Load armor stats from armor_stats.json."""
         try:
@@ -1143,7 +1182,7 @@ class HelldiversPanel(ttk.Frame):
             lines = [f"Primary: {primary}"]
             for key, val in stats.items():
                 lines.append(f"{key.replace('_', ' ').title()}: {val}")
-            self._stats_labels["primary"].config(text="\n".join(lines))
+            self._stats_labels["primary"].config(text=self._clip_lines(lines, max_lines=7))
         else:
             self._stats_labels["primary"].config(text="Select primary weapon")
 
@@ -1153,7 +1192,7 @@ class HelldiversPanel(ttk.Frame):
             lines = [f"Secondary: {secondary}"]
             for key, val in stats.items():
                 lines.append(f"{key.replace('_', ' ').title()}: {val}")
-            self._stats_labels["secondary"].config(text="\n".join(lines))
+            self._stats_labels["secondary"].config(text=self._clip_lines(lines, max_lines=7))
         else:
             self._stats_labels["secondary"].config(text="Select secondary weapon")
 
@@ -1181,23 +1220,26 @@ class HelldiversPanel(ttk.Frame):
             passive_name = selected[selected.rfind("(") + 1 : selected.rfind(")")]
         
         # Build display with stats + passive
-        display_lines = []
+        display_parts: list[str] = []
         
         # Add armor stats if available
         if armor_name and self._armor_stats and armor_name in self._armor_stats:
             stats = self._armor_stats[armor_name]
-            display_lines.append(f"Armor: {stats.get('armor', 'N/A')} | Speed: {stats.get('speed', 'N/A')} | Stamina: {stats.get('stamina', 'N/A')}")
+            display_parts.append(
+                f"Armor: {stats.get('armor', 'N/A')} | Speed: {stats.get('speed', 'N/A')} | Stamina: {stats.get('stamina', 'N/A')}"
+            )
         
         # Add passive with description
         if passive_name:
             description = self._passive_descriptions.get(passive_name, "")
             if description:
-                display_lines.append(f"{passive_name}: {description}")
+                display_parts.append(f"{passive_name}: {description}")
             else:
-                display_lines.append(passive_name)
+                display_parts.append(passive_name)
         
-        if display_lines:
-            self._armor_passive_label.config(text="\n".join(display_lines))
+        if display_parts:
+            # Keep the row compact so lower controls remain visible.
+            self._armor_passive_label.config(text=self._clip_lines(display_parts, max_lines=2))
         else:
             self._armor_passive_label.config(text="")
 
@@ -1401,21 +1443,37 @@ class HelldiversPanel(ttk.Frame):
         editor.focus_force()
         editor.wait_window(editor)
 
+    def open_links_editor(self) -> None:
+        """Public entry point for opening the web link editor from other tabs."""
+        self._on_edit_links()
+
+    def update_wiki_data(self) -> None:
+        """Public entry point for wiki refresh from other tabs."""
+        self._on_update_wiki()
+
 
 class LoadoutApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title("Loadout tool")
-        self.root.minsize(560, 520)
-        self.root.geometry("680x840")
+        self.root.minsize(560, 620)
+        self.root.geometry("680x860")
         self._center_main_window()
         self.root.attributes("-alpha", 1.0)
         self._is_visible = True
         self._overlay_enabled = False
         self._hotkey_listener = None
+        self._hotkey_settings = dict(DEFAULT_HOTKEYS)
+        self._hotkey_option_by_id = {str(o["id"]): o for o in HOTKEY_OPTIONS}
+        self._hotkey_label_to_id = {str(o["label"]): str(o["id"]) for o in HOTKEY_OPTIONS}
+        self._hotkey_visibility_var = tk.StringVar()
+        self._hotkey_overlay_var = tk.StringVar()
+        self._hotkey_note_lbl: ttk.Label | None = None
         self._last_hotkey_times: dict[str, float] = {"num1": 0.0, "num2": 0.0}
         self._alpha_var = tk.DoubleVar(value=100.0)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        self._load_hotkey_settings()
 
         nb = ttk.Notebook(self.root)
         nb.pack(fill=tk.BOTH, expand=True)
@@ -1424,10 +1482,26 @@ class LoadoutApp:
         self._helldivers_panel = helldivers_tab
         nb.add(helldivers_tab, text="Helldivers loadout")
 
-        alpha_fr = ttk.Frame(self.root, padding=(10, 6, 10, 10))
-        alpha_fr.pack(side=tk.BOTTOM, fill=tk.X)
+        settings_tab = ttk.Frame(nb, padding=10)
+        nb.add(settings_tab, text="Settings")
 
-        trans_row = ttk.Frame(alpha_fr)
+        settings_fr = ttk.LabelFrame(settings_tab, text="General", padding=10)
+        settings_fr.pack(fill=tk.X)
+
+        wiki_row = ttk.Frame(settings_fr)
+        wiki_row.pack(fill=tk.X, pady=(0, 10))
+        ttk.Label(wiki_row, text="Game data").pack(side=tk.LEFT)
+        ttk.Button(wiki_row, text="Update from Wiki", command=self._helldivers_panel.update_wiki_data).pack(side=tk.LEFT, padx=(10, 0))
+
+        presets_path_lbl = ttk.Label(
+            settings_fr,
+            text=f"Presets file: {SAVED_HELLDIVERS_LOADOUTS}",
+            font=("Segoe UI", 8),
+            foreground="#666",
+        )
+        presets_path_lbl.pack(anchor="w", pady=(0, 10))
+
+        trans_row = ttk.Frame(settings_fr)
         trans_row.pack(fill=tk.X)
         ttk.Label(trans_row, text="Transparency").pack(side=tk.LEFT)
         alpha_slider = ttk.Scale(
@@ -1441,7 +1515,92 @@ class LoadoutApp:
         self._alpha_value_lbl = ttk.Label(trans_row, text="100%")
         self._alpha_value_lbl.pack(side=tk.RIGHT)
 
+        hotkey_fr = ttk.LabelFrame(settings_tab, text="Hotkeys", padding=10)
+        hotkey_fr.pack(fill=tk.X, pady=(10, 0))
+
+        ttk.Label(hotkey_fr, text="Toggle visibility").grid(row=0, column=0, sticky="w")
+        vis_cb = ttk.Combobox(
+            hotkey_fr,
+            values=[str(o["label"]) for o in HOTKEY_OPTIONS],
+            width=20,
+            state="readonly",
+            textvariable=self._hotkey_visibility_var,
+        )
+        vis_cb.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=(0, 6))
+
+        ttk.Label(hotkey_fr, text="Toggle overlay").grid(row=1, column=0, sticky="w")
+        over_cb = ttk.Combobox(
+            hotkey_fr,
+            values=[str(o["label"]) for o in HOTKEY_OPTIONS],
+            width=20,
+            state="readonly",
+            textvariable=self._hotkey_overlay_var,
+        )
+        over_cb.grid(row=1, column=1, sticky="w", padx=(10, 0))
+
+        ttk.Button(hotkey_fr, text="Apply Hotkeys", command=self._on_apply_hotkeys).grid(row=0, column=2, rowspan=2, padx=(12, 0))
+
+        self._hotkey_note_lbl = ttk.Label(
+            settings_tab,
+            text="",
+            font=("Segoe UI", 9),
+            foreground="#666",
+        )
+        self._hotkey_note_lbl.pack(anchor="w", pady=(10, 0))
+
+        self._sync_hotkey_dropdowns()
+        self._refresh_hotkey_note()
+
         self._setup_hotkeys()
+
+    def _load_hotkey_settings(self) -> None:
+        settings = load_app_settings()
+        raw = settings.get("hotkeys") if isinstance(settings, dict) else None
+        if isinstance(raw, dict):
+            for key in ("toggle_visibility", "toggle_overlay"):
+                value = str(raw.get(key) or "")
+                if value in self._hotkey_option_by_id:
+                    self._hotkey_settings[key] = value
+
+    def _save_hotkey_settings(self) -> None:
+        settings = load_app_settings()
+        if not isinstance(settings, dict):
+            settings = {}
+        settings["hotkeys"] = dict(self._hotkey_settings)
+        save_app_settings(settings)
+
+    def _sync_hotkey_dropdowns(self) -> None:
+        vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
+        over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
+        self._hotkey_visibility_var.set(str(self._hotkey_option_by_id[vis_id]["label"]))
+        self._hotkey_overlay_var.set(str(self._hotkey_option_by_id[over_id]["label"]))
+
+    def _refresh_hotkey_note(self) -> None:
+        if not self._hotkey_note_lbl:
+            return
+        vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
+        over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
+        vis_lbl = str(self._hotkey_option_by_id[vis_id]["label"])
+        over_lbl = str(self._hotkey_option_by_id[over_id]["label"])
+        self._hotkey_note_lbl.configure(text=f"Hotkeys: {vis_lbl} toggles visibility, {over_lbl} toggles overlay mode.")
+
+    def _on_apply_hotkeys(self) -> None:
+        vis_id = self._hotkey_label_to_id.get(self._hotkey_visibility_var.get().strip())
+        over_id = self._hotkey_label_to_id.get(self._hotkey_overlay_var.get().strip())
+        if not vis_id or not over_id:
+            messagebox.showwarning("Invalid hotkeys", "Please select valid hotkeys for both actions.")
+            self._sync_hotkey_dropdowns()
+            return
+        if vis_id == over_id:
+            messagebox.showwarning("Duplicate hotkeys", "Choose different keys for visibility and overlay.")
+            return
+
+        self._hotkey_settings["toggle_visibility"] = vis_id
+        self._hotkey_settings["toggle_overlay"] = over_id
+        self._save_hotkey_settings()
+        self._refresh_hotkey_note()
+        self._setup_hotkeys()
+        messagebox.showinfo("Hotkeys updated", "New hotkeys are now active.")
 
     def _center_main_window(self) -> None:
         self.root.update_idletasks()
@@ -1454,32 +1613,41 @@ class LoadoutApp:
         self.root.geometry(f"{w}x{h}+{x}+{y}")
 
     def _setup_hotkeys(self) -> None:
+        self._clear_tk_hotkey_bindings()
+        if self._hotkey_listener is not None:
+            self._hotkey_listener.stop()
+            self._hotkey_listener = None
+
         if pynput_keyboard is not None:
             self._hotkey_listener = pynput_keyboard.Listener(on_press=self._on_global_key_press)
             self._hotkey_listener.daemon = True
             self._hotkey_listener.start()
             return
 
-        self.root.bind_all("<KP_1>", self._on_toggle_visibility)
-        self.root.bind_all("<End>", self._on_toggle_visibility)
-        self.root.bind_all("<KP_2>", self._on_toggle_overlay)
-        self.root.bind_all("<Down>", self._on_toggle_overlay)
+        vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
+        over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
+        vis_tk = str(self._hotkey_option_by_id[vis_id]["tk"])
+        over_tk = str(self._hotkey_option_by_id[over_id]["tk"])
+        self.root.bind_all(vis_tk, self._on_toggle_visibility)
+        self.root.bind_all(over_tk, self._on_toggle_overlay)
+
+    def _clear_tk_hotkey_bindings(self) -> None:
+        for opt in HOTKEY_OPTIONS:
+            self.root.unbind_all(str(opt["tk"]))
 
     def _on_global_key_press(self, key) -> None:
         if pynput_keyboard is None:
             return
         now = time.monotonic()
+
+        vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
+        over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
+        vis_vk = int(self._hotkey_option_by_id[vis_id]["vk"])
+        over_vk = int(self._hotkey_option_by_id[over_id]["vk"])
+
         vk = getattr(key, "vk", None)
-        num1_match = (
-            vk in (VK_NUMPAD1, VK_END)
-            or key == pynput_keyboard.Key.end
-            or key == pynput_keyboard.KeyCode.from_vk(VK_NUMPAD1)
-        )
-        num2_match = (
-            vk in (VK_NUMPAD2, VK_DOWN)
-            or key == pynput_keyboard.Key.down
-            or key == pynput_keyboard.KeyCode.from_vk(VK_NUMPAD2)
-        )
+        num1_match = vk == vis_vk
+        num2_match = vk == over_vk
 
         if num1_match:
             if now - self._last_hotkey_times["num1"] < 0.2:
