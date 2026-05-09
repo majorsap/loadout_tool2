@@ -74,6 +74,125 @@ DEFAULT_HOTKEYS = {
 }
 
 
+def _normalize_hotkey_token(value: str) -> str:
+    token = str(value or "").strip().lower()
+    if token.startswith("<") and token.endswith(">"):
+        token = token[1:-1]
+    token = token.replace("keypress-", "")
+    token = token.replace("key-", "")
+    token = re.sub(r"[\s_\-]+", "", token)
+    return token
+
+
+def _make_hotkey_spec(token: str) -> dict[str, object] | None:
+    token = _normalize_hotkey_token(token)
+    if not token:
+        return None
+
+    token_aliases = {
+        "leftarrow": "left",
+        "rightarrow": "right",
+        "uparrow": "up",
+        "downarrow": "down",
+        "pgup": "pageup",
+        "pgdn": "pagedown",
+        "return": "enter",
+        "esc": "escape",
+        "del": "delete",
+    }
+    token = token_aliases.get(token, token)
+
+    predefined = {str(opt["id"]): opt for opt in HOTKEY_OPTIONS}
+    if token in predefined:
+        return dict(predefined[token])
+
+    special_keys = {
+        "left": {"label": "Left Arrow", "vk": 0x25, "tk": "<Left>"},
+        "up": {"label": "Up Arrow", "vk": 0x26, "tk": "<Up>"},
+        "right": {"label": "Right Arrow", "vk": 0x27, "tk": "<Right>"},
+        "down": {"label": "Down Arrow", "vk": 0x28, "tk": "<Down>"},
+        "home": {"label": "Home", "vk": 0x24, "tk": "<Home>"},
+        "end": {"label": "End", "vk": 0x23, "tk": "<End>"},
+        "insert": {"label": "Insert", "vk": 0x2D, "tk": "<Insert>"},
+        "delete": {"label": "Delete", "vk": 0x2E, "tk": "<Delete>"},
+        "pageup": {"label": "Page Up", "vk": 0x21, "tk": "<Prior>"},
+        "pagedown": {"label": "Page Down", "vk": 0x22, "tk": "<Next>"},
+        "space": {"label": "Space", "vk": 0x20, "tk": "<space>"},
+        "tab": {"label": "Tab", "vk": 0x09, "tk": "<Tab>"},
+        "escape": {"label": "Escape", "vk": 0x1B, "tk": "<Escape>"},
+        "enter": {"label": "Enter", "vk": 0x0D, "tk": "<Return>"},
+        "backspace": {"label": "Backspace", "vk": 0x08, "tk": "<BackSpace>"},
+    }
+    if token in special_keys:
+        spec = dict(special_keys[token])
+        spec["id"] = token
+        return spec
+
+    if token.startswith("kp") and token[2:].isdigit():
+        num = int(token[2:])
+        if 0 <= num <= 9:
+            return {
+                "id": token,
+                "label": f"Numpad {num}",
+                "vk": 0x60 + num,
+                "tk": f"<KP_{num}>",
+            }
+
+    if token.startswith("num") and token[3:].isdigit():
+        num = int(token[3:])
+        if 0 <= num <= 9:
+            return {
+                "id": f"kp{num}",
+                "label": f"Numpad {num}",
+                "vk": 0x60 + num,
+                "tk": f"<KP_{num}>",
+            }
+
+    if token.startswith("f") and token[1:].isdigit():
+        num = int(token[1:])
+        if 1 <= num <= 24:
+            return {
+                "id": token,
+                "label": f"F{num}",
+                "vk": 0x70 + (num - 1),
+                "tk": f"<F{num}>",
+            }
+
+    if len(token) == 1 and token.isalpha():
+        return {
+            "id": token,
+            "label": token.upper(),
+            "vk": ord(token.upper()),
+            "tk": f"<KeyPress-{token}>",
+        }
+
+    if len(token) == 1 and token.isdigit():
+        return {
+            "id": token,
+            "label": token,
+            "vk": ord(token),
+            "tk": f"<KeyPress-{token}>",
+        }
+
+    return None
+
+
+def _resolve_hotkey_choice(value: str) -> dict[str, object] | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    normalized = _normalize_hotkey_token(text)
+    for opt in HOTKEY_OPTIONS:
+        if normalized in {
+            str(opt["id"]),
+            _normalize_hotkey_token(str(opt["label"])),
+            _normalize_hotkey_token(str(opt["tk"])),
+        }:
+            return dict(opt)
+    return _make_hotkey_spec(normalized)
+
+
 def _get_window_process_name(hwnd: int) -> str:
     if sys.platform != "win32" or not hwnd:
         return ""
@@ -1464,8 +1583,6 @@ class LoadoutApp:
         self._overlay_enabled = False
         self._hotkey_listener = None
         self._hotkey_settings = dict(DEFAULT_HOTKEYS)
-        self._hotkey_option_by_id = {str(o["id"]): o for o in HOTKEY_OPTIONS}
-        self._hotkey_label_to_id = {str(o["label"]): str(o["id"]) for o in HOTKEY_OPTIONS}
         self._hotkey_visibility_var = tk.StringVar()
         self._hotkey_overlay_var = tk.StringVar()
         self._hotkey_note_lbl: ttk.Label | None = None
@@ -1519,26 +1636,27 @@ class LoadoutApp:
         hotkey_fr.pack(fill=tk.X, pady=(10, 0))
 
         ttk.Label(hotkey_fr, text="Toggle visibility").grid(row=0, column=0, sticky="w")
-        vis_cb = ttk.Combobox(
+        vis_entry = ttk.Entry(
             hotkey_fr,
-            values=[str(o["label"]) for o in HOTKEY_OPTIONS],
             width=20,
-            state="readonly",
             textvariable=self._hotkey_visibility_var,
+            state="readonly",
         )
-        vis_cb.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=(0, 6))
+        vis_entry.grid(row=0, column=1, sticky="w", padx=(10, 0), pady=(0, 6))
+        ttk.Button(hotkey_fr, text="Bind", command=lambda: self._capture_hotkey_input(self._hotkey_visibility_var, "Toggle visibility")).grid(row=0, column=2, padx=(10, 0), pady=(0, 6), sticky="w")
 
         ttk.Label(hotkey_fr, text="Toggle overlay").grid(row=1, column=0, sticky="w")
-        over_cb = ttk.Combobox(
+        over_entry = ttk.Entry(
             hotkey_fr,
-            values=[str(o["label"]) for o in HOTKEY_OPTIONS],
             width=20,
-            state="readonly",
             textvariable=self._hotkey_overlay_var,
+            state="readonly",
         )
-        over_cb.grid(row=1, column=1, sticky="w", padx=(10, 0))
+        over_entry.grid(row=1, column=1, sticky="w", padx=(10, 0))
+        ttk.Button(hotkey_fr, text="Bind", command=lambda: self._capture_hotkey_input(self._hotkey_overlay_var, "Toggle overlay")).grid(row=1, column=2, padx=(10, 0), sticky="w")
 
-        ttk.Button(hotkey_fr, text="Apply Hotkeys", command=self._on_apply_hotkeys).grid(row=0, column=2, rowspan=2, padx=(12, 0))
+        ttk.Button(hotkey_fr, text="Apply Hotkeys", command=self._on_apply_hotkeys).grid(row=0, column=3, rowspan=2, padx=(12, 0))
+        ttk.Button(hotkey_fr, text="Reset to Default", command=self._reset_hotkeys_to_default).grid(row=2, column=0, columnspan=4, sticky="w", pady=(8, 0))
 
         self._hotkey_note_lbl = ttk.Label(
             settings_tab,
@@ -1559,7 +1677,7 @@ class LoadoutApp:
         if isinstance(raw, dict):
             for key in ("toggle_visibility", "toggle_overlay"):
                 value = str(raw.get(key) or "")
-                if value in self._hotkey_option_by_id:
+                if _resolve_hotkey_choice(value) is not None:
                     self._hotkey_settings[key] = value
 
     def _save_hotkey_settings(self) -> None:
@@ -1572,35 +1690,97 @@ class LoadoutApp:
     def _sync_hotkey_dropdowns(self) -> None:
         vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
         over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
-        self._hotkey_visibility_var.set(str(self._hotkey_option_by_id[vis_id]["label"]))
-        self._hotkey_overlay_var.set(str(self._hotkey_option_by_id[over_id]["label"]))
+        vis_spec = _resolve_hotkey_choice(vis_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_visibility"])
+        over_spec = _resolve_hotkey_choice(over_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_overlay"])
+        self._hotkey_visibility_var.set(str(vis_spec["label"]) if vis_spec else vis_id)
+        self._hotkey_overlay_var.set(str(over_spec["label"]) if over_spec else over_id)
 
     def _refresh_hotkey_note(self) -> None:
         if not self._hotkey_note_lbl:
             return
         vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
         over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
-        vis_lbl = str(self._hotkey_option_by_id[vis_id]["label"])
-        over_lbl = str(self._hotkey_option_by_id[over_id]["label"])
+        vis_spec = _resolve_hotkey_choice(vis_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_visibility"])
+        over_spec = _resolve_hotkey_choice(over_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_overlay"])
+        vis_lbl = str(vis_spec["label"] if vis_spec else vis_id)
+        over_lbl = str(over_spec["label"] if over_spec else over_id)
         self._hotkey_note_lbl.configure(text=f"Hotkeys: {vis_lbl} toggles visibility, {over_lbl} toggles overlay mode.")
 
+    def _hotkey_spec_from_event(self, event) -> dict[str, object] | None:
+        keysym = getattr(event, "keysym", "") or getattr(event, "char", "") or ""
+        return _make_hotkey_spec(str(keysym))
+
+    def _capture_hotkey_input(self, target_var: tk.StringVar, title: str) -> None:
+        main = self.root
+        dialog = tk.Toplevel(main)
+        dialog.title(title)
+        dialog.transient(main)
+        dialog.resizable(False, False)
+        dialog.grab_set()
+
+        frame = ttk.Frame(dialog, padding=12)
+        frame.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(frame, text="Press a key now.").pack(anchor="w")
+        ttk.Label(frame, text="Esc cancels.", foreground="#666").pack(anchor="w", pady=(4, 0))
+
+        status_lbl = ttk.Label(frame, text="Waiting for key press...", foreground="#666")
+        status_lbl.pack(anchor="w", pady=(10, 0))
+
+        def _close() -> None:
+            if dialog.winfo_exists():
+                dialog.grab_release()
+                dialog.destroy()
+
+        def _on_key_press(event) -> str | None:
+            if getattr(event, "keysym", "") == "Escape":
+                _close()
+                return "break"
+
+            spec = self._hotkey_spec_from_event(event)
+            if not spec:
+                status_lbl.configure(text="That key is not supported. Try another one.", foreground="#a33")
+                return "break"
+
+            target_var.set(str(spec["label"]))
+            _close()
+            return "break"
+
+        dialog.bind("<KeyPress>", _on_key_press)
+        dialog.bind("<Escape>", lambda _event: (_close(), "break")[1])
+        dialog.protocol("WM_DELETE_WINDOW", _close)
+        dialog.update_idletasks()
+        dialog.geometry(f"{dialog.winfo_reqwidth()}x{dialog.winfo_reqheight()}+{main.winfo_rootx() + 60}+{main.winfo_rooty() + 60}")
+        dialog.focus_force()
+        dialog.wait_window(dialog)
+
     def _on_apply_hotkeys(self) -> None:
-        vis_id = self._hotkey_label_to_id.get(self._hotkey_visibility_var.get().strip())
-        over_id = self._hotkey_label_to_id.get(self._hotkey_overlay_var.get().strip())
-        if not vis_id or not over_id:
-            messagebox.showwarning("Invalid hotkeys", "Please select valid hotkeys for both actions.")
+        vis_spec = _resolve_hotkey_choice(self._hotkey_visibility_var.get())
+        over_spec = _resolve_hotkey_choice(self._hotkey_overlay_var.get())
+        if not vis_spec or not over_spec:
+            messagebox.showwarning(
+                "Invalid hotkeys",
+                "Enter a supported key name like A, F1, Numpad 1, Left Arrow, Space, or End.",
+            )
             self._sync_hotkey_dropdowns()
             return
-        if vis_id == over_id:
+        if str(vis_spec["id"]) == str(over_spec["id"]):
             messagebox.showwarning("Duplicate hotkeys", "Choose different keys for visibility and overlay.")
             return
 
-        self._hotkey_settings["toggle_visibility"] = vis_id
-        self._hotkey_settings["toggle_overlay"] = over_id
+        self._hotkey_settings["toggle_visibility"] = str(vis_spec["id"])
+        self._hotkey_settings["toggle_overlay"] = str(over_spec["id"])
         self._save_hotkey_settings()
         self._refresh_hotkey_note()
         self._setup_hotkeys()
         messagebox.showinfo("Hotkeys updated", "New hotkeys are now active.")
+
+    def _reset_hotkeys_to_default(self) -> None:
+        self._hotkey_settings = dict(DEFAULT_HOTKEYS)
+        self._sync_hotkey_dropdowns()
+        self._save_hotkey_settings()
+        self._refresh_hotkey_note()
+        self._setup_hotkeys()
+        messagebox.showinfo("Hotkeys reset", "Hotkeys restored to the default Numpad 1 and Numpad 2 settings.")
 
     def _center_main_window(self) -> None:
         self.root.update_idletasks()
@@ -1626,8 +1806,12 @@ class LoadoutApp:
 
         vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
         over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
-        vis_tk = str(self._hotkey_option_by_id[vis_id]["tk"])
-        over_tk = str(self._hotkey_option_by_id[over_id]["tk"])
+        vis_spec = _resolve_hotkey_choice(vis_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_visibility"])
+        over_spec = _resolve_hotkey_choice(over_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_overlay"])
+        if not vis_spec or not over_spec:
+            return
+        vis_tk = str(vis_spec["tk"])
+        over_tk = str(over_spec["tk"])
         self.root.bind_all(vis_tk, self._on_toggle_visibility)
         self.root.bind_all(over_tk, self._on_toggle_overlay)
 
@@ -1642,8 +1826,12 @@ class LoadoutApp:
 
         vis_id = self._hotkey_settings.get("toggle_visibility", DEFAULT_HOTKEYS["toggle_visibility"])
         over_id = self._hotkey_settings.get("toggle_overlay", DEFAULT_HOTKEYS["toggle_overlay"])
-        vis_vk = int(self._hotkey_option_by_id[vis_id]["vk"])
-        over_vk = int(self._hotkey_option_by_id[over_id]["vk"])
+        vis_spec = _resolve_hotkey_choice(vis_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_visibility"])
+        over_spec = _resolve_hotkey_choice(over_id) or _make_hotkey_spec(DEFAULT_HOTKEYS["toggle_overlay"])
+        if not vis_spec or not over_spec:
+            return
+        vis_vk = int(vis_spec["vk"])
+        over_vk = int(over_spec["vk"])
 
         vk = getattr(key, "vk", None)
         num1_match = vk == vis_vk

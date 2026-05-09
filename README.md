@@ -84,7 +84,10 @@ python loadout_tool.py
    - **Hotkeys** lets you choose keys for:
      - Toggle visibility
      - Toggle overlay mode
+   - Click **Bind** next to a hotkey to press a key and assign it.
+   - The current key is shown in a read-only field.
    - Click **Apply Hotkeys** to activate and save them.
+   - Click **Reset to Default** to restore Numpad 1 and Numpad 2.
 7. Presets file path is shown in **Settings**.
 
 ## Settings Tab
@@ -93,7 +96,7 @@ The **Settings** tab currently includes:
 
 - `Update from Wiki`
 - `Transparency` slider
-- Hotkey selection + `Apply Hotkeys`
+- Hotkey display fields with `Bind`, `Apply Hotkeys`, and `Reset to Default`
 - Presets save file location label
 
 Link buttons and link editing controls are currently hidden from the UI.
@@ -105,6 +108,9 @@ Global hotkeys are enabled when `pynput` is installed.
 - Configurable in Settings for:
    - Toggle tool visibility
    - Toggle overlay/topmost mode
+- Default bindings:
+   - Visibility: Numpad `1`
+   - Overlay: Numpad `2`
 
 Available key choices:
 
@@ -155,5 +161,6 @@ python test_armor_integration.py
 - Moved **Update from Wiki** to the Settings tab.
 - Moved **Transparency** control to the Settings tab.
 - Added configurable hotkeys in Settings with persistent save support.
+- Added Bind buttons and a Reset to Default hotkey action.
 - Moved presets file path label to Settings.
 - Hid link buttons and link editing controls from the active UI for now.
