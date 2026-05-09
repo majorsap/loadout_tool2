@@ -39,6 +39,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("USERPROFILE", ".")) / ".loadout_tool"
 HELLDIVERS_DATA_PATH = SCRIPT_DIR / "helldivers_loadout_data.json"
 WEAPON_STATS_PATH = SCRIPT_DIR / "weapon_stats.json"
+ARMOR_STATS_PATH = SCRIPT_DIR / "armor_stats.json"
 SAVED_HELLDIVERS_LOADOUTS = DATA_DIR / "helldivers_saved_loadouts.json"
 SAVED_WEB_LINKS = DATA_DIR / "web_links.json"
 ICON_DIR = DATA_DIR / "icons"
@@ -769,11 +770,14 @@ class HelldiversPanel(ttk.Frame):
         super().__init__(master, padding=10)
         self._game = load_helldivers_game_data()
         self._weapon_stats = self._load_weapon_stats()
+        self._armor_stats = self._load_armor_stats()
+        self._passive_descriptions = self._game.get("armor", {}).get("passive_descriptions", {}) if self._game else {}
         self._web_links = load_web_links()
         self._link_buttons: list[ttk.Button] = []
         self._fields: dict[str, ttk.Combobox] = {}
         self._icon_labels: dict[str, tk.Label] = {}
         self._stats_labels: dict[str, tk.Label] = {}  # Store stats display labels
+        self._armor_passive_label: tk.Label | None = None
         self._name_entry: ttk.Entry | None = None
         self._saved_cb: ttk.Combobox | None = None
         self._base_strats: list[str] = []  # Store full stratagem list for filtering
@@ -815,6 +819,8 @@ class HelldiversPanel(ttk.Frame):
             # For primary and secondary, also update stats display
             if key in ("primary", "secondary"):
                 cb.bind("<<ComboboxSelected>>", lambda e, k=key: [self._update_icon(k), self._update_weapon_stats()])
+            elif key == "armor":
+                cb.bind("<<ComboboxSelected>>", lambda e, k=key: [self._update_icon(k), self._update_armor_passive()])
             else:
                 cb.bind("<<ComboboxSelected>>", lambda e, k=key: self._update_icon(k))
             self._fields[key] = cb
@@ -848,20 +854,49 @@ class HelldiversPanel(ttk.Frame):
         self._icon_labels[key] = icon_lbl
         row += 1
 
-        # Weapon stats display frame
-        stats_fr = ttk.LabelFrame(self, text="Weapon stats", padding=8)
-        stats_fr.pack(fill=tk.X, pady=(12, 0))
-        
-        stats_text = tk.Label(
-            stats_fr,
-            text="Select primary and secondary weapons to view stats",
+        # Armor passive display
+        ttk.Label(form, text="Armor Passive").grid(row=row, column=0, sticky="nw", pady=3, padx=(0, 8))
+        armor_passive_lbl = tk.Label(
+            form,
+            text="",
             font=("Segoe UI", 9),
             foreground="#666",
             justify=tk.LEFT,
-            wraplength=600,
+            wraplength=400,
         )
-        stats_text.pack(anchor="w")
-        self._stats_labels["text"] = stats_text
+        armor_passive_lbl.grid(row=row, column=1, sticky="w", pady=3)
+        self._armor_passive_label = armor_passive_lbl
+        row += 1
+
+        # Weapon stats display frame
+        stats_fr = ttk.LabelFrame(self, text="Weapon stats", padding=8)
+        stats_fr.pack(fill=tk.X, pady=(12, 0))
+        stats_fr.columnconfigure(0, weight=1)
+        stats_fr.columnconfigure(1, weight=1)
+        
+        # Primary stats (left)
+        primary_text = tk.Label(
+            stats_fr,
+            text="Select primary weapon",
+            font=("Segoe UI", 9),
+            foreground="#666",
+            justify=tk.LEFT,
+            wraplength=300,
+        )
+        primary_text.grid(row=0, column=0, sticky="nw", padx=(0, 8))
+        self._stats_labels["primary"] = primary_text
+        
+        # Secondary stats (right)
+        secondary_text = tk.Label(
+            stats_fr,
+            text="Select secondary weapon",
+            font=("Segoe UI", 9),
+            foreground="#666",
+            justify=tk.LEFT,
+            wraplength=300,
+        )
+        secondary_text.grid(row=0, column=1, sticky="nw")
+        self._stats_labels["secondary"] = secondary_text
 
         save_fr = ttk.LabelFrame(self, text="Save / load named presets", padding=8)
         save_fr.pack(fill=tk.X, pady=(12, 0))
@@ -994,6 +1029,7 @@ class HelldiversPanel(ttk.Frame):
         for key in list(self._icon_labels):
             self._update_icon(key)
         self._update_weapon_stats()
+        self._update_armor_passive()
 
     def _refresh_saved_names(self) -> None:
         if not self._saved_cb:
@@ -1073,37 +1109,97 @@ class HelldiversPanel(ttk.Frame):
             pass
         return {}
 
+    def _load_armor_stats(self) -> dict:
+        """Load armor stats from armor_stats.json."""
+        try:
+            if ARMOR_STATS_PATH.is_file():
+                return json.loads(ARMOR_STATS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        return {}
+
+    def _load_armor_stats(self) -> dict:
+        """Load armor stats from armor_stats.json."""
+        try:
+            if ARMOR_STATS_PATH.is_file():
+                return json.loads(ARMOR_STATS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        return {}
+
     def _update_weapon_stats(self) -> None:
         """Update weapon stats display based on selected primary and secondary."""
         if not self._weapon_stats:
-            self._stats_labels["text"].config(text="Weapon stats not available")
+            self._stats_labels["primary"].config(text="Weapon stats not available")
+            self._stats_labels["secondary"].config(text="")
             return
 
         primary = self._get_val("primary")
         secondary_type, secondary = self._get_secondary_vals()
 
-        lines: list[str] = []
-
         # Primary stats
         if primary and primary in self._weapon_stats.get("primary", {}):
             stats = self._weapon_stats["primary"][primary]
-            lines.append(f"Primary: {primary}")
+            lines = [f"Primary: {primary}"]
             for key, val in stats.items():
-                lines.append(f"  {key.replace('_', ' ').title()}: {val}")
+                lines.append(f"{key.replace('_', ' ').title()}: {val}")
+            self._stats_labels["primary"].config(text="\n".join(lines))
+        else:
+            self._stats_labels["primary"].config(text="Select primary weapon")
 
         # Secondary stats
         if secondary and secondary in self._weapon_stats.get("secondary", {}):
             stats = self._weapon_stats["secondary"][secondary]
-            if lines:
-                lines.append("")  # Blank line separator
-            lines.append(f"Secondary: {secondary}")
+            lines = [f"Secondary: {secondary}"]
             for key, val in stats.items():
-                lines.append(f"  {key.replace('_', ' ').title()}: {val}")
-
-        if not lines:
-            self._stats_labels["text"].config(text="Select primary and secondary weapons to view stats")
+                lines.append(f"{key.replace('_', ' ').title()}: {val}")
+            self._stats_labels["secondary"].config(text="\n".join(lines))
         else:
-            self._stats_labels["text"].config(text="\n".join(lines))
+            self._stats_labels["secondary"].config(text="Select secondary weapon")
+
+    def _update_armor_passive(self) -> None:
+        """Update armor passive and stats display based on selected armor."""
+        armor_label = self._fields.get("armor")
+        if not armor_label:
+            self._armor_passive_label.config(text="")
+            return
+        
+        selected = armor_label.get().strip()
+        if not selected or selected == NONE_CHOICE:
+            self._armor_passive_label.config(text="")
+            return
+        
+        # Extract armor name from label format: "Weight: Armor Name (Passive)"
+        # Parse: everything between first colon and opening paren
+        armor_name = ""
+        if ":" in selected and "(" in selected:
+            armor_name = selected[selected.find(":")+1:selected.rfind("(")].strip()
+        
+        # Extract passive from label format
+        passive_name = ""
+        if "(" in selected and ")" in selected:
+            passive_name = selected[selected.rfind("(") + 1 : selected.rfind(")")]
+        
+        # Build display with stats + passive
+        display_lines = []
+        
+        # Add armor stats if available
+        if armor_name and self._armor_stats and armor_name in self._armor_stats:
+            stats = self._armor_stats[armor_name]
+            display_lines.append(f"Armor: {stats.get('armor', 'N/A')} | Speed: {stats.get('speed', 'N/A')} | Stamina: {stats.get('stamina', 'N/A')}")
+        
+        # Add passive with description
+        if passive_name:
+            description = self._passive_descriptions.get(passive_name, "")
+            if description:
+                display_lines.append(f"{passive_name}: {description}")
+            else:
+                display_lines.append(passive_name)
+        
+        if display_lines:
+            self._armor_passive_label.config(text="\n".join(display_lines))
+        else:
+            self._armor_passive_label.config(text="")
 
     def _on_save(self) -> None:
         if not self._name_entry:

@@ -1,0 +1,626 @@
+{
+  "SC-37 Legionnaire": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Servo-Assisted"
+  },
+  "SC-34 Infiltrator": {
+    "armor": 70,
+    "speed": 530,
+    "stamina": 115,
+    "passive": "Scout"
+  },
+  "SC-30 Trailblazer Scout": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Scout"
+  },
+  "CE-74 Breaker": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Engineering Kit"
+  },
+  "FS-38 Eradicator": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Fortified"
+  },
+  "B-08 Light Gunner": {
+    "armor": 100,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Extra Padding"
+  },
+  "CM-21 Trench Paramedic": {
+    "armor": 64,
+    "speed": 536,
+    "stamina": 118,
+    "passive": "Med-Kit"
+  },
+  "CE-67 Titan": {
+    "armor": 79,
+    "speed": 521,
+    "stamina": 111,
+    "passive": "Engineering Kit"
+  },
+  "EX-00 Prototype X": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Electrical Conduit"
+  },
+  "CE-07 Demolition Specialist": {
+    "armor": 64,
+    "speed": 536,
+    "stamina": 118,
+    "passive": "Engineering Kit"
+  },
+  "FS-37 Ravager": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Engineering Kit"
+  },
+  "CW-4 Arctic Ranger": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Scout"
+  },
+  "PH-9 Predator": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Peak Physique"
+  },
+  "I-09 Heatseeker": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Inflammable"
+  },
+  "AF-50 Noxious Ranger": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Advanced Filtration"
+  },
+  "UF-16 Inspector": {
+    "armor": 75,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Unflinching"
+  },
+  "SR-24 Street Scout": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Siege-Ready"
+  },
+  "AC-2 Obedient": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Acclimated"
+  },
+  "IE-57 Hell-Bent": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Integrated Explosives"
+  },
+  "GS-11 Democracy&#39;s Deputy": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Gunslinger"
+  },
+  "RE-1861 Parade Commander": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Reinforced Epaulettes"
+  },
+  "BP-32 Jackboot": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Ballistic Padding"
+  },
+  "AD-11 Livewire": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Adreno-Defibrillator"
+  },
+  "DS-10 Big Game Hunter": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Desert Stormer"
+  },
+  "RS-20 Constrictor": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Rock Solid"
+  },
+  "RS-100 Sanctioner": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Reduced Signature"
+  },
+  "RS-89 Shadow Paragon": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Reduced Signature"
+  },
+  "CPH-26 Commandant": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Concussive Padding, Hazmat"
+  },
+  "O-3 Free Spirit": {
+    "armor": 50,
+    "speed": 550,
+    "stamina": 125,
+    "passive": "Oxygenator"
+  },
+  "B-01 Tactical": {
+    "armor": 150,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Extra Padding"
+  },
+  "TR-7 Ambassador of the Brand": {
+    "armor": 150,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Extra Padding"
+  },
+  "TR-9 Cavalier of Democracy": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Democracy Protects"
+  },
+  "DP-53 Savior of the Free": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Democracy Protects"
+  },
+  "TR-117 Alpha Commander": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Med-Kit"
+  },
+  "SC-15 Drone Master": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Engineering Kit"
+  },
+  "CE-35 Trench Engineer": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Engineering Kit"
+  },
+  "CM-09 Bonesnapper": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Med-Kit"
+  },
+  "DP-40 Hero of the Federation": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Democracy Protects"
+  },
+  "SA-04 Combat Technician": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Scout"
+  },
+  "CM-14 Physician": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Med-Kit"
+  },
+  "DP-11 Champion of the People": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Democracy Protects"
+  },
+  "SA-25 Steel Trooper": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Servo-Assisted"
+  },
+  "SA-12 Servo Assisted": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Servo-Assisted"
+  },
+  "B-24 Enforcer": {
+    "armor": 129,
+    "speed": 471,
+    "stamina": 71,
+    "passive": "Fortified"
+  },
+  "CE-81 Juggernaut": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Engineering Kit"
+  },
+  "FS-34 Exterminator": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Fortified"
+  },
+  "EX-03 Prototype 3": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Electrical Conduit"
+  },
+  "EX-16 Prototype 16": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Electrical Conduit"
+  },
+  "CE-27 Ground Breaker": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Engineering Kit"
+  },
+  "CM-10 Clinician": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Med-Kit"
+  },
+  "CW-9 White Wolf": {
+    "armor": 150,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Extra Padding"
+  },
+  "PH-56 Jaguar": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Peak Physique"
+  },
+  "TR-40 Gold Eagle": {
+    "armor": 150,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Extra Padding"
+  },
+  "I-92 Fire Fighter": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Inflammable"
+  },
+  "I-102 Draconaught": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Inflammable"
+  },
+  "AF-91 Field Chemist": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Advanced Filtration"
+  },
+  "AF-02 Haz-Master": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Advanced Filtration"
+  },
+  "DP-00 Tactical": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Democracy Protects"
+  },
+  "UF-84 Doubt Killer": {
+    "armor": 125,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Unflinching"
+  },
+  "UF-50 Bloodhound": {
+    "armor": 125,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Unflinching"
+  },
+  "AC-1 Dutiful": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Acclimated"
+  },
+  "IE-3 Martyr": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Integrated Explosives"
+  },
+  "IE-12 Righteous": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Integrated Explosives"
+  },
+  "B-22 Model Citizen": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Democracy Protects"
+  },
+  "GS-17 Frontier Marshal": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Gunslinger"
+  },
+  "RE-2310 Honorary Guard": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Reinforced Epaulettes"
+  },
+  "BP-20 Correct Officer": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Ballistic Padding"
+  },
+  "AD-26 Bleeding Edge": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Adreno-Defibrillator"
+  },
+  "A-9 Helljumper": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Feet First"
+  },
+  "A-35 Recon": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Feet First"
+  },
+  "DS-191 Scorpion": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Desert Stormer"
+  },
+  "RS-6 Fiend Destroyer": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Rock Solid"
+  },
+  "RS-67 Null Cipher": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Reduced Signature"
+  },
+  "SA-7 Headfirst": {
+    "armor": 125,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Supplementary Adrenaline"
+  },
+  "DP-8 Mountain-Scaled": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Siege-Ready"
+  },
+  "CPG-48 Sapper": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Concussive Padding, Grenadier"
+  },
+  "O-44 Bonded Pilot": {
+    "armor": 100,
+    "speed": 500,
+    "stamina": 100,
+    "passive": "Oxygenator"
+  },
+  "CW-22 Kodiak": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Fortified"
+  },
+  "TR-62 Knight": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Servo-Assisted"
+  },
+  "FS-05 Marksman": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Fortified"
+  },
+  "FS-23 Battle Master": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Fortified"
+  },
+  "SA-32 Dynamo": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Servo-Assisted"
+  },
+  "B-27 Fortified Commando": {
+    "armor": 200,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Extra Padding"
+  },
+  "FS-61 Dreadnought": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Servo-Assisted"
+  },
+  "FS-11 Executioner": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Fortified"
+  },
+  "CM-17 Butcher": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Med-Kit"
+  },
+  "FS-55 Devastator": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Fortified"
+  },
+  "CE-64 Grenadier": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Engineering Kit"
+  },
+  "CW-36 Winter Warrior": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Servo-Assisted"
+  },
+  "CE-101 Guerilla Gorilla": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Engineering Kit"
+  },
+  "PH-202 Twigsnapper": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Peak Physique"
+  },
+  "I-44 Salamander": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Inflammable"
+  },
+  "AF-52 Lockdown": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Advanced Filtration"
+  },
+  "SR-64 Cinderblock": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Siege-Ready"
+  },
+  "SR-18 Roadblock": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Siege-Ready"
+  },
+  "GS-66 Lawmaker": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Gunslinger"
+  },
+  "RE-824 Bearer of the Standard": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Reinforced Epaulettes"
+  },
+  "BP-77 Grand Juror": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Ballistic Padding"
+  },
+  "AD-49 Apollonian": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Adreno-Defibrillator"
+  },
+  "DS-42 Federation&#39;s Blade": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Desert Stormer"
+  },
+  "RS-40 Beast of Prey": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Rock Solid"
+  },
+  "SA-8 Ram": {
+    "armor": 175,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Supplementary Adrenaline"
+  },
+  "CPR-80 Bulwark": {
+    "armor": 180,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Concussive Padding, Reinforced"
+  },
+  "O-2 Heavy Operator": {
+    "armor": 150,
+    "speed": 450,
+    "stamina": 50,
+    "passive": "Oxygenator"
+  }
+}
