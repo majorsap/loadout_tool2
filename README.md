@@ -9,7 +9,8 @@ It lets you:
 - Save, load, and delete named loadout presets.
 - Update armor and stratagem data from the Helldivers wiki.
 - Cache item icons locally.
-- Toggle overlay/topmost mode and window visibility with hotkeys.
+- Adjust window transparency from the Settings tab.
+- Configure hotkeys for visibility and overlay toggles from the Settings tab.
 
 ## Project Files
 
@@ -76,30 +77,56 @@ python loadout_tool.py
 5. Load/Delete presets:
    - Pick a saved name from **Saved**.
    - Click **Load** or **Delete**.
-6. Update data from wiki:
-   - Click **Update from Wiki**.
-   - This updates armor + stratagem data in `helldivers_loadout_data.json`.
+6. Open the **Settings** tab to manage app behavior:
+   - **Update from Wiki** refreshes armor + stratagem data in `helldivers_loadout_data.json`.
    - It also launches `fetch_weapon_stats_v2.py` in the background to refresh `weapon_stats.json`.
-7. Optional link buttons:
-   - Three link buttons can open your favorite web pages.
-   - Click **Edit Links** to configure.
-   - Right-click a link button for quick single-link edit.
+   - **Transparency** slider controls app opacity.
+   - **Hotkeys** lets you choose keys for:
+     - Toggle visibility
+     - Toggle overlay mode
+   - Click **Apply Hotkeys** to activate and save them.
+7. Presets file path is shown in **Settings**.
+
+## Settings Tab
+
+The **Settings** tab currently includes:
+
+- `Update from Wiki`
+- `Transparency` slider
+- Hotkey selection + `Apply Hotkeys`
+- Presets save file location label
+
+Link buttons and link editing controls are currently hidden from the UI.
 
 ## Hotkeys
 
-Global hotkeys are enabled when `pynput` is installed:
-- Numpad `1` or `End`: Toggle tool visibility.
-- Numpad `2` or `Down Arrow`: Toggle overlay/topmost mode.
+Global hotkeys are enabled when `pynput` is installed.
 
-If `pynput` is not available, key binds are attached to the app window instead of global hooks.
+- Configurable in Settings for:
+   - Toggle tool visibility
+   - Toggle overlay/topmost mode
+
+Available key choices:
+
+- Numpad `1`
+- Numpad `2`
+- `End`
+- `Down Arrow`
+- `F8`
+- `F9`
+- `F10`
+- `F11`
+- `F12`
+
+If `pynput` is not available, the selected key binds are attached to the app window instead of global hooks.
 
 ## Data and Saved Files
 
 The app stores user data in:
 
 - `%USERPROFILE%\.loadout_tool\helldivers_saved_loadouts.json`
-- `%USERPROFILE%\.loadout_tool\web_links.json`
 - `%USERPROFILE%\.loadout_tool\icons\` (icon cache)
+- `%USERPROFILE%\.loadout_tool\app_settings.json` (settings, including hotkeys)
 
 ## Refresh Data Manually
 
@@ -119,5 +146,14 @@ python test_armor_integration.py
 ## Notes
 
 - Wiki data can drift as pages change over time.
-- If dropdown options seem outdated, run **Update from Wiki** or the manual fetch scripts.
+- If dropdown options seem outdated, run **Update from Wiki** from the Settings tab or run the manual fetch scripts.
 - The app expects JSON files in this repository folder; run commands from here.
+
+## Recent UI Changes
+
+- Added a dedicated **Settings** tab.
+- Moved **Update from Wiki** to the Settings tab.
+- Moved **Transparency** control to the Settings tab.
+- Added configurable hotkeys in Settings with persistent save support.
+- Moved presets file path label to Settings.
+- Hid link buttons and link editing controls from the active UI for now.
