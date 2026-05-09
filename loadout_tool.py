@@ -768,10 +768,12 @@ class HelldiversPanel(ttk.Frame):
     def __init__(self, master: tk.Misc) -> None:
         super().__init__(master, padding=10)
         self._game = load_helldivers_game_data()
+        self._weapon_stats = self._load_weapon_stats()
         self._web_links = load_web_links()
         self._link_buttons: list[ttk.Button] = []
         self._fields: dict[str, ttk.Combobox] = {}
         self._icon_labels: dict[str, tk.Label] = {}
+        self._stats_labels: dict[str, tk.Label] = {}  # Store stats display labels
         self._name_entry: ttk.Entry | None = None
         self._saved_cb: ttk.Combobox | None = None
         self._base_strats: list[str] = []  # Store full stratagem list for filtering
@@ -810,7 +812,11 @@ class HelldiversPanel(ttk.Frame):
             cb = ttk.Combobox(form, values=opts, width=48, state="readonly")
             cb.set(NONE_CHOICE)
             cb.grid(row=row, column=1, sticky="ew", pady=3)
-            cb.bind("<<ComboboxSelected>>", lambda e, k=key: self._update_icon(k))
+            # For primary and secondary, also update stats display
+            if key in ("primary", "secondary"):
+                cb.bind("<<ComboboxSelected>>", lambda e, k=key: [self._update_icon(k), self._update_weapon_stats()])
+            else:
+                cb.bind("<<ComboboxSelected>>", lambda e, k=key: self._update_icon(k))
             self._fields[key] = cb
             icon_lbl = tk.Label(form, image=self._placeholder)
             icon_lbl.grid(row=row, column=2, padx=(4, 0), pady=3)
@@ -841,6 +847,21 @@ class HelldiversPanel(ttk.Frame):
         icon_lbl.grid(row=row, column=2, padx=(4, 0), pady=3)
         self._icon_labels[key] = icon_lbl
         row += 1
+
+        # Weapon stats display frame
+        stats_fr = ttk.LabelFrame(self, text="Weapon stats", padding=8)
+        stats_fr.pack(fill=tk.X, pady=(12, 0))
+        
+        stats_text = tk.Label(
+            stats_fr,
+            text="Select primary and secondary weapons to view stats",
+            font=("Segoe UI", 9),
+            foreground="#666",
+            justify=tk.LEFT,
+            wraplength=600,
+        )
+        stats_text.pack(anchor="w")
+        self._stats_labels["text"] = stats_text
 
         save_fr = ttk.LabelFrame(self, text="Save / load named presets", padding=8)
         save_fr.pack(fill=tk.X, pady=(12, 0))
@@ -972,6 +993,7 @@ class HelldiversPanel(ttk.Frame):
             self._set_val("booster_1", bo)
         for key in list(self._icon_labels):
             self._update_icon(key)
+        self._update_weapon_stats()
 
     def _refresh_saved_names(self) -> None:
         if not self._saved_cb:
@@ -1041,6 +1063,47 @@ class HelldiversPanel(ttk.Frame):
             elif current_val and current_val != NONE_CHOICE:
                 # If current value is no longer valid, clear it
                 self._fields[key].set(NONE_CHOICE)
+
+    def _load_weapon_stats(self) -> dict:
+        """Load weapon stats from weapon_stats.json."""
+        try:
+            if WEAPON_STATS_PATH.is_file():
+                return json.loads(WEAPON_STATS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        return {}
+
+    def _update_weapon_stats(self) -> None:
+        """Update weapon stats display based on selected primary and secondary."""
+        if not self._weapon_stats:
+            self._stats_labels["text"].config(text="Weapon stats not available")
+            return
+
+        primary = self._get_val("primary")
+        secondary_type, secondary = self._get_secondary_vals()
+
+        lines: list[str] = []
+
+        # Primary stats
+        if primary and primary in self._weapon_stats.get("primary", {}):
+            stats = self._weapon_stats["primary"][primary]
+            lines.append(f"Primary: {primary}")
+            for key, val in stats.items():
+                lines.append(f"  {key.replace('_', ' ').title()}: {val}")
+
+        # Secondary stats
+        if secondary and secondary in self._weapon_stats.get("secondary", {}):
+            stats = self._weapon_stats["secondary"][secondary]
+            if lines:
+                lines.append("")  # Blank line separator
+            lines.append(f"Secondary: {secondary}")
+            for key, val in stats.items():
+                lines.append(f"  {key.replace('_', ' ').title()}: {val}")
+
+        if not lines:
+            self._stats_labels["text"].config(text="Select primary and secondary weapons to view stats")
+        else:
+            self._stats_labels["text"].config(text="\n".join(lines))
 
     def _on_save(self) -> None:
         if not self._name_entry:
